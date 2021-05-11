@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <title>ExcelTemplate</title>
+    <style type="text/css">
+        .layui-form-label {
+            width: auto;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 非计划模板 -->
+<div class="layui-form" id="unPlanForm">
+    <div class="layui-row">
+        <div class="layui-col-md2">
+            <div class="layui-form-item">
+                <div class="layui-input-inline">
+                    <button type="button" class="layui-btn" id="unPlanDownload">
+                        下载模板
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md2">
+            <div class="layui-form-item">
+                <div class="layui-input-inline">
+                    <button type="button" class="layui-btn" id="unPlanUpload">
+                        选择文件
+                    </button>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md2">
+            <div class="layui-form-item">
+                <div class="layui-input-inline">
+                    <input type="text" class="layui-input fileName" style="display: none" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md4">
+            <div class="layui-form-item">
+                <label class="layui-form-label">入库策略</label>
+                <div class="layui-input-inline">
+                    <select id="strategy" name="strategy" lay-verify="required">
+                        <option value="0">全量</option>
+                        <option value="1">增量</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md2">
+            <div class="layui-form-item">
+                <div class="layui-input-inline">
+                    <button class="layui-btn" id="unPlanCommit" onclick="return false">上传</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- 计划模板 -->
+<div class="layui-form" id="planForm">
+    <div class="layui-row">
+
+        <div class="layui-col-md3">
+            <div class="layui-form-item">
+                <label class="layui-form-label">计划</label>
+                <div class="layui-input-inline">
+                    <input type="text" class="layui-input" id="plan" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md2">
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button type="button" class="layui-btn" id="planDownload">
+                        下载模板
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md2">
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button type="button" class="layui-btn" id="planUpload">
+                        选择模板
+                    </button>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md3">
+            <div class="layui-form-item">
+                <div class="layui-input-inline">
+                    <input type="text" class="layui-input fileName" style="display: none" readonly>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="layui-col-md2">
+            <div class="layui-form-item">
+                <div class="layui-input-inline">
+                    <button class="layui-btn" id="planCommit" onclick="return false">上传</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table class="layui-hide" id="excelData" lay-filter="excelData"></table>
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<script type="text/html" id="operation">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="delete">删除</a>
+</script>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var webservice = "/webservice";
+        var uploadExcel = webservice + "/uploadExcelData";
+        var tableMetaData = webservice + "/tableMetaData";
+        var tableData = webservice + "/tableData";
+        var templateId = getQueryVariable("id");
+        var downloadExcel = webservice + "/downloadExcel";
+        var downloadPlanExcel = webservice + "/downloadPlanExcel";
+        var findTemplate = webservice + "/findTemplate";
+
+        // 选用哪个form
+        var formEle;
+        var uploadEle;
+        var commitEle;
+
+        function getQueryVariable(variable) {
+            var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i = 0; i < vars.length; i++) {
+                var pair = vars[i].split("=");
+                if (pair[0] == variable) {
+                    return pair[1];
+                }
+            }
+
+            return null;
+        }
+
+        if (templateId == null && templateId == "") {
+            layer.msg("获取模板失败");
+        }
+
+        $.ajax({
+            url: findTemplate + "/" + templateId,
+            method: 'GET',
+            dataType: 'json',
+            contentType: "application/json",
+            success: function (data) {
+                if (data.isPlan == 1) {
+                    formEle = "planForm";
+                    uploadEle = "planUpload";
+                    commitEle = "planCommit";
+                    $("#unPlanForm").remove();
+                }
+                else {
+                    formEle = "unPlan";
+                    uploadEle = "unPlanUpload";
+                    commitEle = "unPlanCommit";
+                    $("#planForm").remove();
+                }
+
+                layui.use(['form', 'layer', 'upload'], function () {
+                    var layer = layui.layer;
+                    var upload = layui.upload;
+                    var $ = layui.jquery;
+
+                    upload.render({
+                        elem: "#" + uploadEle, //  '#upload',
+                        url: uploadExcel,
+                        auto: false,       //选择文件后不自动上传
+                        bindAction: "#" + commitEle,  //'#commit',
+                        accept: 'file'     //普通文件
+                        , exts: 'xls|excel|xlsx'
+                        , before: function () {
+
+                            this.data = {
+                                templateId: templateId,
+                                isPlan: $("#isPlan").val(),
+                                plan: $("#plan").val(),
+                                strategy: $("#strategy").val()
+                            }
+                        },
+                        //选择文件后的回调
+                        choose: function (obj) {
+                            obj.preview(function (index, file, result) {
+                                $('.fileName').css('display', 'block');
+                                $('.fileName').val(file.name);
+                            })
+                        },
+                        //操作成功的回调
+                        done: function (res, index, upload) {
+                            var code = res.code === 0 ? 1 : 2;
+                            layer.alert(res.msg, {icon: code}, function () {
+                                window.location.reload();
+                            })
+                        },
+                        //上传错误回调
+                        error: function (index, upload) {
+                            layer.alert('上传失败失败');
+                        }
+                    });
+                })
+            },
+            error: function (data) {
+                layer.msg(data.responseJSON.title);
+            }
+        })
+
+        $.ajax({
+            url: tableMetaData + "/" + templateId,
+            method: 'GET',
+            dataType: 'json',
+            contentType: "application/json",
+            success: function (data) {
+                var headData = data;
+                // 动态创建table
+                createtable(headData);
+
+            },
+            error: function (data) {
+                layer.msg(data.responseJSON.title);
+            }
+        })
+
+
+        function createtable(headData) {
+            layui.use(['table', 'laypage', 'laydate'], function () {
+                var table = layui.table;
+                var laydate = layui.laydate;
+                var userTable = table.render({
+                    elem: '#excelData'
+                    //, toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+                    , defaultToolbar: []
+                    , page: true
+                    , request: {
+                        pageName: 'current' //页码的参数名称，默认：page
+                        , limitName: 'size' //每页数据量的参数名，默认：limit
+                    }
+                    , url: tableData + "/" + templateId
+                    //, cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+                    , cols: [headData]
+                    , parseData: function (res) { //res 即为原始返回的数据
+                        return {
+                            "code": res.code, //解析接口状态
+                            //"msg": res.msg, //解析提示文本
+                            "count": res.count, //解析数据长度
+                            "data": res.data //解析数据列表
+                        }
+                    }
+                    , done: function (res, curr, count) {
+
+                    }
+                });
+
+                laydate.render({
+                    elem: '#plan'
+                    , type: 'month'
+                    , value: new Date()
+                });
+            })
+        }
+
+
+        $("#unPlanDownload").click(function () {
+            var a = document.createElement('a');
+            var url = downloadExcel + "/" + templateId;
+            a.href = url;
+            a.click()
+        })
+
+        $("#planDownload").click(function () {
+            var a = document.createElement('a');
+            var url = downloadPlanExcel + "/" + templateId + "?plan=" + $("#plan").val();
+            a.href = url;
+            a.click()
+        })
+    });
+
+</script>
+</body>
+</html>

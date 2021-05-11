@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinfusi.democracy.service.biportal.api.portal.mapper.UploadLogMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.sinfusi.democracy.service.biportal.api.portal.domain.UploadLog">
+        <id column="id" property="id"/>
+        <result column="excel_name" property="excelName"/>
+        <result column="template_id" property="templateId"/>
+        <result column="plan_type" property="planType"/>
+        <result column="plan" property="plan"/>
+        <result column="in_out" property="inOut"/>
+        <result column="delete_data" property="deleteData"/>
+        <result column="created_by" property="createBy"/>
+        <result column="created_date" property="createdDate"/>
+        <result column="last_modified_by" property="lastModifiedBy"/>
+        <result column="last_modified_date" property="lastModifiedDate"/>
+        <result column="version_lock" property="versionLock"/>
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, excel_name, template_id,plan_type,plan,in_out,delete_data,created_by,created_date,last_modified_by,last_modified_date,version_lock
+    </sql>
+
+    <insert id="insertGetId" useGeneratedKeys="true" keyProperty="id"
+            parameterType="com.sinfusi.democracy.service.biportal.api.portal.domain.UploadLog">
+        insert into upload_log (excel_name,
+        template_id,plan_type,plan,in_out,delete_data,created_by,created_date,last_modified_by,last_modified_date,version_lock)
+        values (#{excelName}, #{templateId}, #{planType}, #{plan}, #{inOut}, #{deleteData},
+        #{createdBy},#{createdDate},#{lastModifiedBy},#{lastModifiedDate},#{versionLock})
+        <!--<selectKey keyProperty="id" resultType="java.lang.Integer">
+            select LAST_INSERT_ID() as id
+        </selectKey>-->
+    </insert>
+
+
+</mapper>

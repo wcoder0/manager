@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <title>userManager</title>
+</head>
+<body>
+
+<div class="layui-form">
+    <div class="layui-row">
+        <div class="layui-col-md4">
+            <div class="layui-form-item">
+                <label class="layui-form-label">昵称</label>
+                <div class="layui-input-block">
+                    <input type="text" id="username" name="username" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md4">
+            <div class="layui-form-item">
+                <label class="layui-form-label">登录名</label>
+                <div class="layui-input-block">
+                    <input type="text" id="name" name="name" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md4">
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" data-type="reload" id="userSearch" lay-filter="userSearch">搜索</button>
+                    <button class="layui-btn" data-type="reload" id="userReset" lay-filter="userReset">重置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table class="layui-hide" id="user" lay-filter="user"></table>
+<input id="currentUserId" data-id="" style="display: none">
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<script type="text/html" id="operation">
+    <a class="layui-btn layui-btn-xs" lay-event="see">查看</a>
+    <a class="layui-btn layui-btn-xs" lay-event="update">编辑</a>
+    <a class="layui-btn layui-btn-xs" lay-event="deleteOne">删除</a>
+    <!-- <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="delete">删除</a>-->
+</script>
+
+<script>
+    layui.use(['table', 'form', 'laypage'], function() {
+        var table = layui.table;
+        var form = layui.form;
+        var laypage = layui.laypage;
+        var webservice = "/user";
+        var findUsers = webservice + "/findUsers";
+        var userForm = "/userForm";
+        var addUser = webservice + "/addUser";
+        var updateUser = webservice + "/updateUser";
+        var deleteUser = webservice + "/deleteUser";
+        var deleteUsers = webservice + "/deleteUserByIds";
+
+        var userTable = table.render({
+            elem: '#user'
+            , toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+            , defaultToolbar: []
+            , page: true
+            , request: {//current=1&size=2
+                pageName: 'current' //页码的参数名称，默认：page
+                , limitName: 'size' //每页数据量的参数名，默认：limit
+            }
+            , url: findUsers
+            , cellMinWidth: 40 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+            , cols: [
+                [
+                    {type: 'checkbox', fixed: 'left'}
+                    ,{field: 'id', title: 'ID', hide: true}
+                    , {field: 'name', title: '用户名'}
+                    , {field: 'username', title: '昵称'}
+                    , {field: 'email', title: '邮箱'}
+                    , {field: 'sex', title: '性别'}
+                    , {field: 'phone', title: '电话'}
+                    , {field: 'type', title: '用户类型'}
+                    , {field: 'status', title: '状态'}
+                    , {field: 'createTime', title: '创建时间'}
+                    , {fixed: 'right', title: '操作', toolbar: '#operation', minWidth: 280}
+                ]
+            ]
+            , parseData: function(res) { //res 即为原始返回的数据
+                return {
+                    "code": "0", //解析接口状态
+                    "success": true,
+                    //"msg": res.msg, //解析提示文本
+                    "count": res.data.total, //解析数据长度
+                    "data": res.data.records //解析数据列表
+                }
+            }
+            , done: function(res, curr, count) {
+
+            }
+        });
+
+
+        //头工具栏事件
+        table.on('toolbar(user)', function(obj) {
+            var checkStatus = table.checkStatus(obj.config.id)
+                , data = checkStatus.data; //获取选中的数据
+            var limit = obj.config.page.limit;
+            var page = obj.config.page.page;
+            switch(obj.event) {
+                case 'add':
+                    goAdd(limit, page);
+                    break;
+                case 'update':
+                    if(data && data.length > 1) {
+                        layer.alert('请选择一个要修改的值');
+                        return;
+                    }
+
+                    if(data && data.length < 1) {
+                        layer.alert('请选择一个要修改的值');
+                        return;
+                    }
+                    goEdit(data[0],['确定', '关闭']);
+                    break;
+                case 'delete':
+                    goDelete(data);
+                    break;
+            }
+            ;
+        });
+
+        //监听行工具事件
+        table.on('tool(user)', function(obj) {
+            var data = obj.data;
+            if(obj.event === 'deleteOne') {
+                layer.confirm('真的删除行么', function(index) {
+                    doDelete(data.id);
+                    obj.del();
+                    layer.close(index);
+                });
+            }
+            else if(obj.event === 'see') {
+                goEdit(data,[]);
+            }
+            else if(obj.event === 'update') {
+                goEdit(data,['确定', '关闭']);
+            }
+        });
+
+
+        function goAdd(limit, page) {
+            layer.open({
+                title: "新增用户",
+                type: 2,
+                //content: "/userForm",
+                content: userForm,
+                area: ['40%', '60%'],
+                skin: "layui-layer-molv",
+                btn: ['确定', '关闭'],
+                success: function(layero, index) {  //成功获得加载子页面时，预先加载，将值从父窗口传到 子窗口
+                    layui.form.render();
+                },
+
+                yes: function(index, layero) {   //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                    var body = layer.getChildFrame("body", index);
+                    var data = {};
+                    body.find("#userForm").serializeArray().forEach(function(item) {    //获取弹出层写下的数据，input，下拉框啊，之类的表单元素（即changefileform下的所有数据）
+                        data[item.name] = item.value;   //根据表单元素的name属性来获取数据
+                    });
+
+
+                    //layui.form.verify();
+
+                    /*var form = layui.form;
+                    //监听提交
+                    form.on('submit(userSubmit)', function(data){
+                        // 添加到数据库   刷新数据库
+                        doAdd(data, limit, page);
+                        // 刷新数据表
+                        layer.close(index);
+                        return false;
+                    });
+
+                    // 获取表单中的提交按钮（在我的表单里第一个button按钮就是提交按钮，使用find方法寻找即可）
+                    var submit = body.find('button')[0];
+                    // 触发点击事件，会对表单进行验证，验证成功则提交表单，失败则返回错误信息
+                    submit.click();*/
+
+                    var submitID = 'LAY-back-submit'; // 1.提交按钮ID
+                    var submitFilterID = 'LAY-front-submit'; // 2.提交按钮lay-filter
+
+                    var submit = layero.find('iframe').contents().find('#'+ submitID); // 3.获取子页面按钮
+                    var iframeWindow = layero.find('iframe')[0].contentWindow; // 4.获取子页面iframe对象
+                    // 5.监听子页面提交事件
+                    iframeWindow.layui.form.on('submit(' + submitFilterID + ')', function(data) {
+                        // 5.1新增用户
+                        doAdd(data.field, limit, page);
+                        layer.close(index);
+                    });
+
+                    // 6.触发子页面点击事件
+                    submit.trigger('click');
+                }
+            });
+        }
+
+        function goEdit(data,btn) {
+            layer.open({
+                title: "编辑用户",
+                type: 2,
+                content: userForm,
+                area: ['40%', '60%'],
+                skin: "layui-layer-molv",
+                //btn: ['确定', '关闭'],
+                btn: btn,
+                success: function(layero, index) {  //成功获得加载子页面时，预先加载，将值从父窗口传到 子窗口
+                    var body = layer.getChildFrame('body');
+                    for(var key in data) {
+                        body.find('#' + key).val(data[key]);
+                    }
+
+                    body.find('#passItem')[0].style.display = 'none';
+
+                    //var iframeWindow = window['layui-layer-iframe'+ index]
+                    //表单初始赋值
+                    //layuiadmin-form-useradmin即 class="layui-form" 所在元素对应的 lay-filter="" 对应的值
+                    //data=表格的数据
+                    //iframeWindow.layui.form.val("userForm",data[0]);
+                    //layui.form.render();
+                },
+
+                yes: function(index, layero) {   //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                    var body = layer.getChildFrame("body", index);
+                    var data = {};
+                    body.find("#userForm").serializeArray().forEach(function(item) {    //获取弹出层写下的数据，input，下拉框啊，之类的表单元素（即changefileform下的所有数据）
+                        data[item.name] = item.value;   //根据表单元素的name属性来获取数据
+                    });
+
+                    var submitID = 'LAY-back-submit'; // 1.提交按钮ID
+                    var submitFilterID = 'LAY-front-submit'; // 2.提交按钮lay-filter
+
+                    var submit = layero.find('iframe').contents().find('#'+ submitID); // 3.获取子页面按钮
+                    var iframeWindow = layero.find('iframe')[0].contentWindow; // 4.获取子页面iframe对象
+                    // 5.监听子页面提交事件
+                    iframeWindow.layui.form.on('submit(' + submitFilterID + ')', function(data) {
+                        // 5.1新增用户
+                        doUpdate(data.field);
+                        layer.close(index);
+                    });
+
+                    // 6.触发子页面点击事件
+                    submit.trigger('click');
+
+                    // 获取表单中的提交按钮（在我的表单里第一个button按钮就是提交按钮，使用find方法寻找即可）
+                    //var submit = body.find('button')[0];
+                    // 触发点击事件，会对表单进行验证，验证成功则提交表单，失败则返回错误信息
+                    //submit.click();
+                    //resetSearch();
+                }
+            });
+        }
+
+        function goDelete(data) {
+            if(data.length < 0) {
+                alert("请选中需要删除的值");
+                return;
+            }
+            else {
+                var ids = [];
+                for(i in data) {
+                    ids.push(data[i].id);
+                }
+
+                layer.confirm('真的删除行么', function(index) {
+                    doDeleteByIds(ids);
+                    layer.close(index);
+                });
+            }
+        }
+
+        function doAdd(userInfo, limit, page) {
+            $.ajax({
+                type: 'POST',
+                url: addUser,
+                data: JSON.stringify(userInfo),
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                success: function(data) {
+                    if(data.success) {
+                        reload(limit, page);
+                        layer.msg("添加成功");
+                    }
+                    else {
+                        layer.msg("添加失败");
+                    }
+                },
+                error: function(data) {
+                    layer.msg("添加失败");
+                }
+            });
+        }
+
+        function doUpdate(userInfo) {
+            $.ajax({
+                type: 'PUT',
+                url: updateUser,
+                data: JSON.stringify(userInfo),
+                dataType: 'json',
+                contentType: "application/json",
+                success: function(data) {
+                    if(data.success) {
+                        reload();
+                        layer.msg("修改成功");
+                    }
+                    else {
+                        layer.msg("修改失败");
+                    }
+                },
+                error: function(data) {
+                    layer.msg("修改失败");
+                }
+            });
+        }
+
+        function doDelete(id) {
+            $.ajax({
+                type: 'DELETE',
+                url: deleteUser + "/" + id,
+                dataType: 'json',
+                contentType: "application/json",
+                success: function(data) {
+                    if(data.success) {
+                        layer.msg("删除成功");
+                    }
+                    else {
+                        layer.msg("删除失败");
+                    }
+                },
+                error: function(data) {
+                    layer.msg("删除失败");
+                }
+            });
+        }
+
+
+        function doDeleteByIds(ids) {
+            $.ajax({
+                type: 'DELETE',
+                url: deleteUsers,
+                data: JSON.stringify(ids),
+                dataType: 'json',
+                contentType: "application/json",
+                success: function(data) {
+                    if(data.success) {
+                        layer.msg("删除成功");
+                        reload();
+                    }
+                    else {
+                        layer.msg("删除失败");
+                    }
+                },
+                error: function(data) {
+                    layer.msg("删除失败");
+                }
+            });
+        }
+
+        function reload(limit, page) {
+            //执行重载
+            userTable.reload('id', {
+                page: {
+                    current: page,
+                    size: limit
+                }
+            });
+        }
+
+        //搜索加载--数据表格重载
+        var $ = layui.$, active = {
+            reload: function() {
+                //执行重载
+                table.reload('user', {
+                    page: {
+                        curr: 1 //重新从第 1 页开始
+                    }
+                    , where: {
+                        username: $("#username").val(),
+                        name: $("#name").val()
+                    }
+                });
+            }
+        };
+
+
+        $('#userSearch').on('click', function() {
+            //ids=new Array();
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+        $('#userReset').on('click', function() {
+            $("#username").val('');
+            $("#name").val('');
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+    });
+</script>
+</body>
+</html>

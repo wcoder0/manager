@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <title>设置用户菜单权限</title>
+</head>
+<body>
+<table class="layui-hide" id="menu" lay-filter="menu"></table>
+<input type="text" class="userId" id="userId" style="display:none"/>
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<script>
+    $(document).ready(function () {
+        var elem = parent.document.getElementById('currentUserId');
+        layui.config({
+            base: '/lib/layui/extend/'
+        }).extend({
+            treeGrid: 'treeGrid'
+        }).use(['treeGrid'], function () {
+            var webservice = "/webservice";
+            var findMenus = webservice + "/findUserMenus/" + $(elem).val();
+            var table = layui.table;
+            treeGrid = layui.treeGrid;//很重要
+            menuTable = treeGrid.render({
+                id: 'menu'
+                , elem: '#menu'
+                , idField: 'id'
+                , url: findMenus
+                , cellMinWidth: 100
+                , treeId: 'id'//树形id字段名称
+                , treeUpId: 'pId'//树形父id字段名称
+                , treeShowName: 'name'//以树形式显示的字段
+                , method: 'get'
+                , cols: [
+                    [
+                        {type: 'checkbox', fixed: 'left'}
+                        , {field: 'id', title: 'ID', width: 80, hide: true}
+                        , {field: 'name', title: '菜单名称'}
+                        , {field: 'href', title: 'URL'}
+                        , {field: 'des', title: '描述'}
+                        //,{field:'id', title: 'id',hide:true,minWidth: 0}
+                        //,{field:'pId', title: 'pid',hide:true,minWidth: 0}
+                        , {
+                        title: '操作', align: 'center'
+                    }
+                    ]
+                ]
+                , page: false
+            });
+        });
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>layui</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+</head>
+<body>
+
+<ul id="userMenus"></ul>
+<input type="text" class="userId" id="userId" style="display:none"/>
+<input type="text" class="menuIds" id="menuIds" style="display:none"/>
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+<!-- 注意：如果你直接复制所有代码到本地，上述js路径需要改成你本地的 -->
+<script>
+    $(document).ready(function () {
+        var elem = parent.document.getElementById('currentUserId');
+        var webservice = "/webservice";
+        var findUserMenuTree = webservice + "/findUserMenuTree/" + $(elem).val();
+
+        $.ajax({
+            type: 'GET',
+            url: findUserMenuTree,
+            dataType: 'json',
+            contentType: "application/json",
+            success: function (data) {
+                var treeData = data.data;
+                layui.use(['tree', 'util'], function () {
+                    var tree = layui.tree
+                        , layer = layui.layer
+                        , util = layui.util;
+                    //开启复选框
+                    menuTree = tree.render({
+                        elem: '#userMenus'
+                        , data: treeData
+                        //,data: datas
+                        , showCheckbox: true
+                        , id: 'id'
+                    });
+                });
+
+            },
+            error: function (data) {
+                layer.msg(data.responseJSON.title);
+            }
+        });
+
+
+    })
+</script>
+</body>
+</html>

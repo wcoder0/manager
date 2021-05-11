@@ -1,0 +1,127 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>菜单表单</title>
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <style>
+        body {
+            margin: 0px;
+        }
+    </style>
+</head>
+<body>
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<form id="menuForm" class="layui-form">
+    <div class="layui-form-item" style="display: none;">
+        <label class="layui-form-label">菜单id</label>
+        <div class="layui-input-block">
+            <input type="text" name="id" id="id" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">菜单名</label>
+        <div class="layui-input-block">
+            <input type="text" name="name" id="name" lay-verify="required" lay-reqtext="菜单名是必填项" autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">上级菜单</label>
+        <div class="layui-input-block">
+            <!-- <input type="text" id="parentId" name="parentId"  autocomplete="off" class="layui-input">-->
+            <select name="pId" id="pId"> </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">菜单URL</label>
+        <div class="layui-input-block">
+            <input type="text" id="href" name="href" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">菜单顺序</label>
+        <div class="layui-input-block">
+            <input type="text" id="sort" name="sort" lay-verify="number" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">菜单类型</label>
+        <div class="layui-input-block">
+            <!-- <input type="text" id="type" name="type" autocomplete="off" class="layui-input">-->
+            <select name="type" id="type" lay-verify="required">
+                <option value="0">系统菜单</option>
+                <option value="1">BI菜单</option>
+                <option value="2">Excel菜单</option>
+            </select>
+            <!-- <input type="checkbox" name="type[0]" title="系统菜单" checked>
+            <input type="checkbox" name="like[1]" title="BI菜单" >
+            <input type="checkbox" name="like[2]" title="Excel菜单">-->
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">是否打开新窗口</label>
+        <div class="layui-input-block">
+            <!-- <input type="radio"  name="target" value="1" title="是">
+             <input type="radio"  name="target" value="0" title="否">-->
+            <input type="checkbox" name="target" lay-skin="switch" lay-filter="target" lay-text="是|否">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">菜单描述</label>
+        <div class="layui-input-block">
+            <input type="text" id="des" name="des" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div style="display: none">
+        <div class="layui-input-block">
+            <button class="layui-btn" lay-submit lay-filter="menuSubmit">立即提交</button>
+            <!-- <button type="reset" class="layui-btn layui-btn-primary">重置</button>-->
+        </div>
+    </div>
+</form>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var webservice = "/webservice";
+        var findFirstLevelMenu = webservice + "/findFirstLevelMenu";
+
+        layui.use('form', function () {
+            var form = layui.form;
+            form.render();
+            $('#pId').empty();
+
+            $.ajax({
+                type: 'GET',
+                url: findFirstLevelMenu,
+                data: {},
+                dataType: 'json',
+                contentType: "application/json",
+                success: function (data) {
+                    if (data) {
+                        var elem = parent.document.getElementById('parentMenuId');
+                        var parentId = $(elem).val();
+                        $('#pId').append("<option value=''>请选择上级菜单</option>");
+                        $.each(data, function (index, item) {
+                            //$('#pId').append("<option value="+item.id+">"+item.name+"</option>");
+                            var option = new Option(item.name, item.id);
+                            if (item.id == parentId) {
+                                option.setAttribute("selected", 'true');
+                            }
+                            $('#pId').append(option);//往下拉菜单里添加元素
+                            form.render('select'); //这个很重要
+                        })
+                    }
+                },
+                error: function (data) {
+                    layer.msg(data);
+                }
+            });
+
+        });
+    })
+</script>
+</body>
+</html>

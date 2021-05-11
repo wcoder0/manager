@@ -1,0 +1,85 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>疫苗预约</title>
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <style>
+        body {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+<form id="userForm" class="layui-form" action="" lay-filter="userForm">
+    <div class="layui-form-item" style="display: none;">
+        <label class="layui-form-label">预约id</label>
+        <div class="layui-input-block">
+            <input type="text" id="id" name="id" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">姓名</label>
+        <div class="layui-input-block">
+            <input type="text" name="name" id="name" lay-verify="required" lay-reqtext="用户名是必填项" autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">昵称</label>
+        <div class="layui-input-block">
+            <input type="text" id="username" name="username"  lay-verify="required" lay-reqtext="昵称是必填项" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">密码</label>
+        <div class="layui-input-block">
+            <input type="text" id="password" name="password"  lay-verify="required" lay-reqtext="昵称是必填项" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">邮箱</label>
+        <div class="layui-input-block">
+            <input type="text" id="email" name="email"  lay-verify="email" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">性别</label>
+        <div class="layui-input-block">
+            <input type="text" id="sex" name="sex"  autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">电话</label>
+        <div class="layui-input-block">
+            <input type="text" id="phone" name="phone" lay-verify="phone|number" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">用户类型</label>
+        <div class="layui-input-block">
+            <!--<input type="text" id="type" name="type"  autocomplete="off" class="layui-input">-->
+            <select id="meetCondition" name="meetCondition" lay-filter="aihao">
+                <option value="是">是</option>
+                <option value="否">否</option>
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">状态</label>
+        <div class="layui-input-block">
+            <input type="text" id="status" name="status"  autocomplete="off" class="layui-input">
+        </div>
+    </div>
+</form>
+<script>
+    layui.use('form', function(){
+        var form = layui.form;
+
+    });
+</script>
+</body>
+</html>

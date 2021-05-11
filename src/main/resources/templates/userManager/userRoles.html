@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <title>UserRoles</title>
+</head>
+<body>
+<table class="layui-hide" id="role" lay-filter="role"></table>
+<input type="text" class="userId" id="userId" style="display:none"/>
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<script>
+    $(document).ready(function () {
+        layui.use(['table'], function () {
+            var table = layui.table;
+            var webservice = "/webservice";
+            var findRoles = webservice + "/findUserRoles/" + $("#userId").val();
+
+            var roleTable = table.render({
+                elem: '#role'
+                //,toolbar: '#toolbarDemo'  //自定义工具栏
+                // ,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+                // ,defaultToolbar:['filter']
+                , page: true
+                , request: {//current=1&size=2
+                    pageName: 'current' //页码的参数名称，默认：page
+                    , limitName: 'size' //每页数据量的参数名，默认：limit
+                }
+                , url: findRoles
+                , cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+                , cols: [//标题栏
+                    [
+                        {type: 'checkbox', fixed: 'left'}
+                        , {field: 'id', title: 'ID', hide: true}
+                        , {field: 'name', title: '角色名'}
+                        , {field: 'des', title: '描述'}
+                    ]
+                ]
+                , parseData: function (res) { //res 即为原始返回的数据
+                    return {
+                        "code": "0", //解析接口状态
+                        //"msg": res.msg, //解析提示文本
+                        "count": res.total, //解析数据长度
+                        "data": res.records //解析数据列表
+                    }
+                }
+                , done: function (res, curr, count) { // 隐藏列
+                    //数据表格加载完成时调用此函数
+                    //如果是异步请求数据方式，res即为你接口返回的信息。
+                    //如果是直接赋值的方式，res即为：{data: [], count: 99} data为当前页数据、count为数据总长度
+                    //设置全部数据到全局变量
+                    var roleIds = [];
+                    var table_data = res.data;
+                    //在缓存中找到id ,然后设置data表格中的选中状态
+                    //循环所有数据，找出对应关系，设置checkbox选中状态
+                    for (var i = 0; i < table_data.length; i++) {
+                        for (var j = 0; j < roleIds.length; j++) {
+                            //数据id和要勾选的id相同时checkbox选中
+                            if (table_data[i].id == ids[j]) {
+                                //这里才是真正的有效勾选
+                                table_data[i]["LAY_CHECKED"] = 'true';
+                                //找到对应数据改变勾选样式，呈现出选中效果
+                                var index = table_data[i]['LAY_TABLE_INDEX'];
+                                $('.layui-table-fixed-l tr[data-index=' + index + '] input[type="checkbox"]').prop('checked', true);
+                                $('.layui-table-fixed-l tr[data-index=' + index + '] input[type="checkbox"]').next().addClass('layui-form-checked');
+                            }
+                        }
+                    }
+                    //设置全选checkbox的选中状态，只有改变LAY_CHECKED的值， table.checkStatus才能抓取到选中的状态
+                    var checkStatus = table.checkStatus('role');
+                    if (checkStatus.isAll) {
+                        $(' .layui-table-header th[data-field="0"] input[type="checkbox"]').prop('checked', true);
+                        $('.layui-table-header th[data-field="0"] input[type="checkbox"]').next().addClass('layui-form-checked');
+                    }
+                }
+            });
+        });
+
+
+        function reload() {
+            //执行重载
+            roleTable.reload('id', {
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+            });
+        }
+    });
+
+</script>
+</body>
+</html>

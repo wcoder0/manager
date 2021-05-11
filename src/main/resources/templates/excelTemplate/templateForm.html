@@ -1,0 +1,99 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>模板表单</title>
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <style>
+        body {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<form id="templateForm" class="layui-form">
+    <div class="layui-form-item" style="display: none;">
+        <label class="layui-form-label">模板id</label>
+        <div class="layui-input-block">
+            <input type="text" name="id" id="id" autocomplete="off" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">模板名</label>
+        <div class="layui-input-block">
+            <input type="text" name="name" id="name" lay-verify="required" lay-reqtext="菜单名是必填项" autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">库表</label>
+        <div class="layui-input-block">
+            <select id="tableName" name="tableName" lay-verify="required">
+            </select>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn" id="upload">
+                选择模板
+            </button>
+            <input type="text" name="excelName" id="excelName" readonly="readonly" lay-verify="required"
+                   lay-reqtext="菜单名是必填项" autocomplete="off"
+                   class="layui-input">
+        </div>
+    </div>
+
+    <div style="display: none">
+        <div class="layui-input-block">
+            <button class="layui-btn" id="templateSubmit" lay-submit lay-filter="templateSubmit">立即提交</button>
+            <button class="layui-btn" id="commit" onclick="return false">上传</button>
+        </div>
+    </div>
+</form>
+<script type="text/javascript">
+    $(document).ready(function () {
+        var webservice = "/webservice";
+        var findTables = webservice + "/findTables";
+        $("#tableName").empty();
+
+        layui.use('form', function () {
+            var form = layui.form;
+            form.render();
+
+            $.ajax({
+                type: 'GET',
+                url: findTables,
+                data: {},
+                dataType: 'json',
+                contentType: "application/json",
+                success: function (data) {
+                    if (data) {
+                        var elem = parent.document.getElementById('selectTable');
+                        var selectTable = $(elem).val();
+                        $.each(data, function (index, item) {
+                            $('#tableName').append("<option value=" + item + ">" + item + "</option>");
+                            var option = new Option(item, item);
+
+                            if (item == selectTable) {
+                                option.setAttribute("selected", 'true');
+                            }
+
+                            $('#tableName').append(option);
+                            form.render('select');
+                        })
+                    }
+                },
+                error: function (data) {
+                    layer.msg(data.responseJSON.title);
+                }
+            });
+
+        });
+    })
+</script>
+</body>
+</html>

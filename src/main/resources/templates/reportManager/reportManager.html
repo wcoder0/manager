@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <title>userManager</title>
+</head>
+<body>
+
+<div class="layui-form">
+    <div class="layui-row">
+        <div class="layui-col-md4">
+            <div class="layui-form-item">
+                <label class="layui-form-label">姓名</label>
+                <div class="layui-input-block">
+                    <input type="text" id="name" name="name" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md4">
+            <div class="layui-form-item">
+                <label class="layui-form-label">家庭地址</label>
+                <div class="layui-input-block">
+                    <input type="text" id="address" name="address" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md4">
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" data-type="reload" id="userSearch" lay-filter="userSearch">搜索</button>
+                    <button class="layui-btn" data-type="reload" id="userReset" lay-filter="userReset">重置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<table class="layui-hide" id="user" lay-filter="user"></table>
+<input id="currentUserId" data-id="" style="display: none">
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<script type="text/html" id="operation">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">查看</a>
+   <!-- <a class="layui-btn layui-btn-xs" lay-event="goUserMenus">修改</a>
+    <a class="layui-btn layui-btn-xs" lay-event="goUserRoles">删除</a>-->
+    <!-- <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="delete">删除</a>-->
+</script>
+
+<script>
+    layui.use(['table', 'form', 'laypage'], function() {
+        var table = layui.table;
+        var form = layui.form;
+        var laypage = layui.laypage;
+        var webservice = "/epidemicReport";
+        var findUsers = webservice + "/findEpidemicReports";
+        var userForm = "/reportForm";
+
+        var userTable = table.render({
+            elem: '#user'
+            //,toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+            , defaultToolbar: []
+            , page: true
+            , request: {//current=1&size=2
+                pageName: 'current' //页码的参数名称，默认：page
+                , limitName: 'size' //每页数据量的参数名，默认：limit
+            }
+            , url: findUsers
+            , cellMinWidth: 40 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+            , cols: [
+                [
+                    //{type: 'checkbox', fixed: 'left'},
+                    {field: 'id', title: 'ID', hide: true}
+                    , {field: 'name', title: '姓名'}
+                    , {field: 'age', title: '年龄'}
+                    , {field: 'phone', title: '电话'}
+                    , {field: 'address', title: '家庭地址'}
+                    , {field: 'temperature', title: '今日体温'}
+                    , {field: 'sex', title: '性别'}
+                    , {field: 'fever', title: '是否发烧'}
+                    , {field: 'cough', title: '是否咳嗽'}
+                    , {field: 'symptoms', title: '其他症状'}
+                    , {field: 'currAddr', title: '当前所在地'}
+                    , {field: 'outSide', title: '是否外出'}
+                    , {field: 'outAddr', title: '外出地点'}
+                    //, {fixed: 'right', title: '操作', toolbar: '#operation', minWidth: 280}
+                ]
+            ]
+            , parseData: function(res) { //res 即为原始返回的数据
+                return {
+                    "code": "0", //解析接口状态
+                    "success": true,
+                    //"msg": res.msg, //解析提示文本
+                    "count": res.data.total, //解析数据长度
+                    "data": res.data.records //解析数据列表
+                }
+            }
+            , done: function(res, curr, count) {
+
+            }
+        });
+
+
+        //头工具栏事件
+        table.on('toolbar(user)', function(obj) {
+            var checkStatus = table.checkStatus(obj.config.id)
+                , data = checkStatus.data; //获取选中的数据
+            var limit = obj.config.page.limit;
+            var page = obj.config.page.page;
+            switch(obj.event) {
+                case 'add':
+                    goAdd(limit, page);
+                    break;
+                case 'update':
+                    if(data && data.length > 1) {
+                        layer.alert('请选择一个要修改的值');
+                        return;
+                    }
+
+                    if(data && data.length < 1) {
+                        layer.alert('请选择一个要修改的值');
+                        return;
+                    }
+                    goEdit(data[0]);
+                    break;
+                case 'delete':
+                    goDelete(data);
+                    break;
+            }
+            ;
+        });
+
+        //监听行工具事件
+        table.on('tool(user)', function(obj) {
+            var data = obj.data;
+            if(obj.event === 'delete') {
+                layer.confirm('真的删除行么', function(index) {
+                    doDelete(data.id);
+                    obj.del();
+                    layer.close(index);
+                });
+            }
+            else if(obj.event === 'edit') {
+                goEdit(data);
+            }
+        });
+
+
+        //搜索加载--数据表格重载
+        var $ = layui.$, active = {
+            reload: function() {
+                //执行重载
+                table.reload('user', {
+                    page: {
+                        curr: 1 //重新从第 1 页开始
+                    }
+                    , where: {
+                        name: $("#name").val(),
+                        address: $("#address").val()
+                    }
+                });
+            }
+        };
+
+
+        $('#userSearch').on('click', function() {
+            //ids=new Array();
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+        $('#userReset').on('click', function() {
+            $("#name").val('');
+            $("#address").val('');
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sinfusi.democracy.service.biportal.api.portal.mapper.ExcelTemplateMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.sinfusi.democracy.service.biportal.api.portal.domain.ExcelTemplate">
+        <id column="id" property="id" />
+        <result column="excel_name" property="excelName" />
+        <result column="table_name" property="tableName" />
+      <!--  <result column="excel_name" property="name" />-->
+        <result column="menu_name" property="menuName" />
+        <result column="template_name" property="templateName" />
+        <result column="type" property="type" />
+        <result column="created_by" property="createBy" />
+        <result column="created_date" property="createdDate" />
+        <result column="last_modified_by" property="lastModifiedBy" />
+        <result column="last_modified_date" property="lastModifiedDate" />
+        <result column="version_lock" property="versionLock" />
+    </resultMap>
+
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, excel_name, table_name,menu_name,template_name,type,created_by,created_date,last_modified_by,last_modified_date,version_lock
+    </sql>
+
+    <insert id="insertGetId"  useGeneratedKeys="true" keyProperty="id" parameterType="com.sinfusi.democracy.service.biportal.api.portal.domain.ExcelTemplate">
+        insert into excel_template (excel_name, table_name,menu_name,template_name,type,created_by,created_date,last_modified_by,last_modified_date,version_lock) values (#{excelName}, #{tableName}, #{menuName}, #{templateName}, #{type}, #{createdBy},#{createdDate},#{lastModifiedBy},#{lastModifiedDate},#{versionLock})
+        <!--<selectKey keyProperty="id" resultType="java.lang.Integer">
+            select LAST_INSERT_ID() as id
+        </selectKey>-->
+    </insert>
+
+
+
+</mapper>
