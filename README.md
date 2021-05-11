@@ -1,0 +1,2 @@
+# manager
+layui,springboot,mybaties
