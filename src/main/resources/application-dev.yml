@@ -3,7 +3,7 @@ server:
   max-http-header-size: 8192
   port: 8080
   ssl:
-    enabled: true
+    enabled: false
     key-store: classpath:5604086_dongruofan.xyz.pfx
     key-store-type: JKS
 #    key-alias: tomcat_https
@@ -25,10 +25,11 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
     driverClassName: com.mysql.cj.jdbc.Driver
     name: my-blog-datasource
-#    url: jdbc:mysql://192.168.57.97:3306/manager?serverTimezone=GMT%2B8&useSSL=FALSE&useUnicode=true&characterEncoding=utf-8&autoReconnect=true&allowMultiQueries=true
-    url: jdbc:mysql://114.55.92.162:3306/manager?serverTimezone=GMT%2B8&useSSL=FALSE&useUnicode=true&characterEncoding=utf-8&autoReconnect=true&allowMultiQueries=true
+    url: jdbc:mysql://192.168.57.97:3306/manager?serverTimezone=GMT%2B8&useSSL=FALSE&useUnicode=true&characterEncoding=utf-8&autoReconnect=true&allowMultiQueries=true
+#    url: jdbc:mysql://114.55.92.162:3306/manager?serverTimezone=GMT%2B8&useSSL=FALSE&useUnicode=true&characterEncoding=utf-8&autoReconnect=true&allowMultiQueries=true
     username: root
-    password: 12345678
+    password: root
+#    password: 12345678
 mybatis-plus:
   type-aliases-package: com.manager.system.entity
   mapper-locations: classpath*:mapper/*.xml
@@ -42,3 +43,7 @@ mybatis-plus:
     lazyLoadingEnabled: true #延时加载的开关
     multipleResultSetsEnabled: true #开启的话，延时加载一个属性时会加载该对象全部属性，否则按需加载属性
 #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #打印sql语句,调试用
+
+owner:
+  image:
+    file: F:\小程序\image

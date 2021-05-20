@@ -38,6 +38,15 @@ public class MenuController {
       menu2.setType(0);
       menus.add(menu2);
 
+
+      Menu menu3 = new Menu();
+      menu3.setMenuId(4);
+      menu3.setMenuName("业主信息");
+      menu3.setHref("ownerManager");
+      menu3.setTarget(0);
+      menu3.setType(0);
+      menus.add(menu3);
+
       responseModel.setSuccess(true);
       responseModel.setData(menus);
       return menus;

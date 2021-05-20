@@ -16,8 +16,10 @@ public class MvcConfig implements WebMvcConfigurer {
             .excludePathPatterns("/lib/**")
             .excludePathPatterns("/login/**")
             .excludePathPatterns("/logout")
+            .excludePathPatterns("/owner/getImage/**")
             .excludePathPatterns("/epidemicReport/addEpidemicReport")
             .excludePathPatterns("/vaccineAppoint/addVaccineAppoint")
+            .excludePathPatterns("/owner/addOwner")
       .excludePathPatterns("/toLogin");
    }
 }

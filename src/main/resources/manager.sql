@@ -11,7 +11,7 @@
  Target Server Version : 50727
  File Encoding         : 65001
 
- Date: 11/05/2021 08:52:20
+ Date: 20/05/2021 10:08:05
 */
 
 SET NAMES utf8mb4;
@@ -38,12 +38,35 @@ CREATE TABLE `epidemic_report`  (
   `out_addr` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `curr_addr` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of epidemic_report
 -- ----------------------------
 INSERT INTO `epidemic_report` VALUES (1, 'wm', 26, '男', '武汉', '123', 36.7, NULL, '2021-05-11 08:33:33', '是', '是', '否', '是', '北京', '武汉');
+
+-- ----------------------------
+-- Table structure for owner
+-- ----------------------------
+DROP TABLE IF EXISTS `owner`;
+CREATE TABLE `owner`  (
+  `id_card` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
+  `name` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
+  `sex` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
+  `age` int(11) NULL DEFAULT NULL,
+  `address` varchar(1000) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
+  `picture` longblob NULL,
+  `create_time` datetime(0) NULL DEFAULT NULL,
+  `update_time` datetime(0) NULL DEFAULT NULL,
+  `path` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
+  `image` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
+  PRIMARY KEY (`id_card`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of owner
+-- ----------------------------
+INSERT INTO `owner` VALUES ('11', NULL, NULL, NULL, NULL, NULL, '2021-05-20 09:20:47', NULL, 'F:\\小程序\\image', '11.jpg');
 
 -- ----------------------------
 -- Table structure for user

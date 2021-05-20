@@ -1,9 +1,12 @@
 package com.manager.system.controller;
 
+import java.io.*;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +46,11 @@ public class IndexController {
    @RequestMapping("/reportManager")
    public String reportManager(HttpServletRequest request) {
       return "reportManager/reportManager";
+   }
+
+   @RequestMapping("/ownerManager")
+   public String ownerManager(HttpServletRequest request) {
+      return "ownerManager/ownerManager";
    }
 
 
