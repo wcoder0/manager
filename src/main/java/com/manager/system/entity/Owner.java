@@ -55,4 +55,7 @@ public class Owner implements Serializable {
 
    @TableField("image")
    private String image;
+
+   @TableField("password")
+   private String password;
 }

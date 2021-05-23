@@ -36,4 +36,6 @@ public class OwnerVo implements Serializable {
 
 
    private Date updateTime;
+
+   private String password;
 }

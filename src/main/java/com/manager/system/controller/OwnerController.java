@@ -9,10 +9,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import cn.hutool.core.io.IoUtil;
+import cn.hutool.crypto.SecureUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.manager.system.entity.Owner;
-import com.manager.system.entity.OwnerVo;
+import com.manager.system.entity.*;
 import com.manager.system.exception.BusinessException;
 import com.manager.system.model.ResponseModel;
 import com.manager.system.service.OwnerService;
@@ -91,6 +91,9 @@ public class OwnerController {
             dest.setImage(image);
          }
 
+         String pass = owner.getPassword();
+         pass = SecureUtil.md5(pass);
+         owner.setPassword(pass);
          BeanUtils.copyProperties(owner, dest);
          dest.setCreateTime(new Date());
          //dest.setPicture(picture.getBytes());
@@ -215,6 +218,30 @@ public class OwnerController {
 
       byte[] bytes = new byte[]{};
       return bytes;
+   }
+
+
+   @PostMapping("/login")
+   public ResponseModel login(@RequestBody Owner ownerLogin, HttpServletRequest request) {
+      ResponseModel responseModel = new ResponseModel();
+      String name = ownerLogin.getName();
+      String pass = ownerLogin.getPassword();
+      pass = SecureUtil.md5(pass);
+      QueryWrapper queryWrapper = new QueryWrapper();
+      queryWrapper.eq("name", name);
+      queryWrapper.eq("password", pass);
+      Owner loginOwner = ownerService.getOne(queryWrapper);
+
+      if(loginOwner == null) {
+         responseModel.setSuccess(false);
+         responseModel.setMessage("用户名或者密码错误");
+      }
+      else {
+         responseModel.setSuccess(true);
+         request.getSession().setAttribute("loginOwner", loginOwner);
+      }
+
+      return responseModel;
    }
 
 }
