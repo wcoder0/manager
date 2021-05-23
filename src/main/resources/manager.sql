@@ -11,7 +11,7 @@
  Target Server Version : 50727
  File Encoding         : 65001
 
- Date: 23/05/2021 18:18:05
+ Date: 23/05/2021 18:34:29
 */
 
 SET NAMES utf8mb4;
@@ -60,15 +60,16 @@ CREATE TABLE `owner`  (
   `update_time` datetime(0) NULL DEFAULT NULL,
   `path` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
   `image` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL,
+  `password` varchar(255) CHARACTER SET utf8 COLLATE utf8_bin NOT NULL,
   PRIMARY KEY (`id_card`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_bin ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of owner
 -- ----------------------------
-INSERT INTO `owner` VALUES ('11', NULL, NULL, NULL, NULL, NULL, '2021-05-20 09:20:47', NULL, 'F:\\小程序\\image', '11.jpg');
-INSERT INTO `owner` VALUES ('12', NULL, NULL, NULL, NULL, NULL, '2021-05-20 17:29:57', NULL, 'F:\\小程序\\image', '12.png');
-INSERT INTO `owner` VALUES ('13', 'name', '男', 11, 'xx', NULL, '2021-05-20 17:31:38', NULL, 'F:\\小程序\\image', '13.png');
+INSERT INTO `owner` VALUES ('11', NULL, NULL, NULL, NULL, NULL, '2021-05-20 09:20:47', NULL, 'F:\\小程序\\image', '11.jpg', '');
+INSERT INTO `owner` VALUES ('12', NULL, NULL, NULL, NULL, NULL, '2021-05-20 17:29:57', NULL, 'F:\\小程序\\image', '12.png', '');
+INSERT INTO `owner` VALUES ('13', 'name', '男', 11, 'xx', NULL, '2021-05-20 17:31:38', NULL, 'F:\\小程序\\image', '13.png', '');
 
 -- ----------------------------
 -- Table structure for user
