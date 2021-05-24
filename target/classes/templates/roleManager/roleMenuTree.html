@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>layui</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+</head>
+<body>
+
+<div id="roleMenus" class="demo-tree"></div>
+<input type="text" class="roleId" id="roleId" style="display:none"/>
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<script>
+    $(document).ready(function () {
+        var elem = parent.document.getElementById('currentRoleId');
+        layui.use(['tree', 'util'], function () {
+            var tree = layui.tree
+                , layer = layui.layer
+                , util = layui.util;
+            var webservice = "/webservice";
+            var findRoleMenuTree = webservice + "/findRoleMenuTree/" + $(elem).val();
+
+            $.ajax({
+                type: 'GET',
+                url: findRoleMenuTree,
+                dataType: 'json',
+                contentType: "application/json",
+                success: function (data) {
+                    //开启复选框
+                    tree.render({
+                        elem: '#roleMenus'
+                        , data: data.data
+                        , showCheckbox: true
+                        , id: 'id'
+                    });
+                },
+                error: function (data) {
+                    layer.msg(data.responseJSON.title);
+                }
+            });
+        });
+    })
+</script>
+</body>
+</html>

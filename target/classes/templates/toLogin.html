@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>疫情防控</title>
+    <link rel="stylesheet" href="lib/layui/css/layui.css" media="all"/>
+    <link rel="stylesheet" href="css/login.css" media="all"/>
+    <style>
+        /* 覆盖原框架样式 */
+        .layui-input {
+            background-color: inherit;
+            padding-left: 30px;
+        }
+
+        .zyl_login_height {
+            background-image: url('login/login.jpg');
+            background-size: 100% 100%;
+            background-repeat: no-repeat
+        }
+
+        #username, #password {
+            height: 45px;
+            border-color: #1d1c1cf0;
+        }
+
+        div.layui-form-item {
+            margin-bottom: 10px !important;
+            margin-top: 10px !important;
+        }
+
+        .layui-elem-field legend {
+            margin-left: 0px;
+            padding: 0 0px;
+            font-size: 20px;
+            font-weight: 300;
+            margin: auto;
+        }
+
+        .layui-field-title {
+            margin: 10px 0 20px;
+            border-width: 0;
+            border-top-width: 0px;
+        }
+
+        #loginTitle {
+            font-weight: bold;
+            color: #000;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 5px;
+            margin-left: 40%;
+        }
+    </style>
+</head>
+<body class="zyl_login_height">
+
+<!-- LoginForm -->
+<div class="zyl_lofo_main">
+    <fieldset class="layui-elem-field layui-field-title zyl_mar_02">
+        <legend id="loginTitle">欢迎登陆</legend>
+    </fieldset>
+    <div class="layui-row layui-col-space15">
+        <form class="layui-form zyl_pad_01" action="">
+            <div class="layui-col-sm12 layui-col-md12">
+                <div class="layui-form-item">
+                    <input type="text" id="name" name="name" lay-verify="required|userName" autocomplete="off"
+                           placeholder="账号" class="layui-input">
+                    <i class="layui-icon layui-icon-username zyl_lofo_icon"></i>
+                </div>
+            </div>
+            <div class="layui-col-sm12 layui-col-md12">
+                <div class="layui-form-item">
+                    <input type="password" id="password" name="password" lay-verify="required|pass" autocomplete="off"
+                           placeholder="密码" class="layui-input">
+                    <i class="layui-icon layui-icon-password zyl_lofo_icon"></i>
+                </div>
+            </div>
+            <div class="layui-col-sm12 layui-col-md12">
+                <button class="layui-btn layui-btn-fluid" lay-submit="" lay-filter="login" style="font-weight: bold;">立即登录</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- LoginForm End -->
+
+
+<!-- Jquery Js -->
+<script type="text/javascript" src="lib/jquery/jquery.min.js"></script>
+<!-- Layui Js -->
+<script type="text/javascript" src="lib/layui/layui.js"></script>
+<!-- Jqarticle Js -->
+<script type="text/javascript" src="lib/assembly/jparticle/jparticle.min.js"></script>
+<!-- ZylVerificationCode Js-->
+<script type="text/javascript" src="lib/assembly/zylVerificationCode/zylVerificationCode.js"></script>
+<script>
+    layui.use(['form'], function () {
+        var form = layui.form;
+        var loginUrl = "/login";
+
+        //自定义验证规则
+        form.verify({
+            name: function (value) {
+                if (value) {
+                    return '用户名必填';
+                }
+            }
+            , password: function (value) {
+                if (value) {
+                    return '密码必填';
+                }
+            }
+        });
+
+        //监听提交
+        form.on('submit(login)', function (data) {
+            var loginData = data.field;
+
+            $.ajax({
+                type: 'POST',
+                url: loginUrl,
+                data: JSON.stringify(loginData),
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    if(data.success){
+                        window.location = "/index";
+                    }
+                    else{
+                        layer.msg("用户名或者密码错误");
+                    }
+                },
+                error: function (data) {
+                    layer.msg("登录失败");
+                }
+            });
+
+            return false;
+        });
+
+        //设置背景主体高度
+        var zyl_login_height = $(window).height();
+        $(".zyl_login_height").css("cssText", "height:" + zyl_login_height + "px!important");
+    });
+
+</script>
+
+<!-- Footer -->
+<div class="footer">
+    © 2021 - 疫情防控管理平台 || 版权所有
+</div>
+<!--<div class="layui-footer">
+    <div class="layui-col-sm12 layui-col-md12 zyl_center zyl_mar_01">
+        © 2019 - 简约后台登陆界面 || 简约后台登陆界面版权所有
+    </div>
+</div>-->
+<!-- Footer End -->
+</body>
+</html>

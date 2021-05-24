@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <title>roleManager</title>
+</head>
+<body>
+<div class="layui-form">
+    <div class="layui-row">
+        <div class="layui-col-md4">
+            <div class="layui-form-item" style="display: none">
+                <label class="layui-form-label"></label>
+                <div class="layui-input-block">
+                    <input type="text" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md4">
+            <div class="layui-form-item">
+                <label class="layui-form-label">角色名</label>
+                <div class="layui-input-block">
+                    <input type="text" id="name" name="name" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md4">
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" data-type="reload" id="roleSearch" lay-filter="roleSearch">搜索</button>
+                    <button class="layui-btn" data-type="reload" id="roleReset" lay-filter="roleReset">重置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<table class="layui-hide" id="role" lay-filter="role"></table>
+<input id="currentRoleId" data-id="" style="display: none">
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<script type="text/html" id="operation">
+    <a class="layui-btn layui-btn-xs" lay-event="editRole">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="deleteRole">删除</a>
+    <a class="layui-btn layui-btn-xs" lay-event="modifyRoleMenus">修改权限</a>
+    <a class="layui-btn layui-btn-xs" lay-event="modifyRoleTemplates">修改权限</a>
+</script>
+
+<script>
+    layui.use(['table', 'form'], function () {
+        var table = layui.table;
+        var form = layui.form;
+        var webservice = "/webservice";
+        var roleForm = "/roleForm";
+        var findRoles = webservice + "/findRoles";
+        var addRole = webservice + "/addRole";
+        var updateRole = webservice + "/updateRole";
+        var deleteRole = webservice + "/deleteRole";
+        var deleteRoleByIds = webservice + "/deleteRoleByIds";
+        var roleMenus = "/roleMenuTree";
+        var modifyRoleMenusUrl = webservice+"/modifyRoleMenus";
+        var modifyRoleTemplatesUrl = webservice+"/modifyRoleTemplates";
+
+        var roleTable = table.render({
+            elem: '#role'
+            , toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+            , defaultToolbar: []
+            , request: {//current=1&size=2
+                pageName: 'current' //页码的参数名称，默认：page
+                , limitName: 'size' //每页数据量的参数名，默认：limit
+            }
+            , page: true
+            , url: findRoles
+            , cellMinWidth: 100 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+            , cols: [//标题栏
+                [
+                    {type: 'checkbox', fixed: 'left'}
+                    , {field: 'id', title: 'ID', hide: true}
+                    , {field: 'name', title: '角色名', minWidth: 120}
+                    , {field: 'des', title: '描述', minWidth: 150}
+                    , {fixed: 'right', title: '操作', toolbar: '#operation', minWidth: 150}
+                ]
+            ]
+            , parseData: function (res) { //res 即为原始返回的数据
+                return {
+                    "code": "0", //解析接口状态
+                    //"msg": res.msg, //解析提示文本
+                    "count": res.total, //解析数据长度
+                    "data": res.records //解析数据列表
+                }
+            }
+            , done: function (res, curr, count) { // 隐藏列
+
+            }
+        });
+
+
+        //监听头工具栏事件
+        table.on('toolbar(role)', function (obj) {
+            var checkStatus = table.checkStatus(obj.config.id)
+                , data = checkStatus.data; //获取选中的数据
+            switch (obj.event) {
+                case 'add':
+                    goAdd();
+                    break;
+                case 'update':
+                    if (data && data.length > 1) {
+                        layer.alert('请选择一个要修改的值');
+                        return;
+                    }
+
+                    if (data && data.length < 1) {
+                        layer.alert('请选择一个要修改的值');
+                        return;
+                    }
+
+                    goEdit(data[0]);
+                    break;
+                case 'delete':
+                    goDelete(data);
+                    break;
+            }
+            ;
+        });
+
+        //监听行工具事件
+        table.on('tool(role)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'deleteRole') {
+                layer.confirm('真的删除行么', function (index) {
+                    doDelete(data.id)
+                    layer.close(index);
+                });
+            } else if (obj.event === 'editRole') {
+                goEdit(data);
+            } else if (obj.event === 'modifyRoleMenus') {
+                goRoleMenus(data);
+            }
+            else if(obj.event === 'modifyRoleTemplates'){
+                goRoleTemplates(data);
+            }
+        });
+
+
+        function goAdd() {
+            layer.open({
+                title: "新增角色",
+                type: 2,
+                content: roleForm,
+                area: ['30%', '30%'],
+                skin: "layui-layer-molv",
+                btn: ['确定', '关闭'],
+                success: function (layero, index) {    //成功获得加载changefile.html时，预先加载，将值从父窗口传到 子窗口
+                    layui.form.render();
+                },
+
+                yes: function (index, layero) {         //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                    var body = layer.getChildFrame("body", index);
+                    var data = {};
+                    body.find("#roleForm").serializeArray().forEach(function (item) {    //获取弹出层写下的数据，input，下拉框啊，之类的表单元素（即changefileform下的所有数据）
+                        data[item.name] = item.value;   //根据表单元素的name属性来获取数据
+                    });
+
+                    // 获取表单中的提交按钮（在我的表单里第一个button按钮就是提交按钮，使用find方法寻找即可）
+                    var submit = body.find('button')[0];
+                    // 触发点击事件，会对表单进行验证，验证成功则提交表单，失败则返回错误信息
+                    submit.click();
+
+                    if (data.name) {
+                        doAdd(data);
+                        layer.close(index);
+                    }
+                }
+            });
+        }
+
+        function goEdit(data) {
+            layer.open({
+                title: "编辑角色",
+                type: 2,
+                content: roleForm,
+                area: ['30%', '30%'],
+                skin: "layui-layer-molv",
+                btn: ['确定', '关闭'],
+                success: function (layero, index) {  //成功获得加载子页面时，预先加载，将值从父窗口传到 子窗口
+                    var body = layer.getChildFrame('body');
+                    for (var key in data) {
+                        body.find('#' + key).val(data[key]);
+                    }
+                },
+
+                yes: function (index, layero) {   //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                    var body = layer.getChildFrame("body", index);
+                    var data = {};
+                    body.find("#roleForm").serializeArray().forEach(function (item) {    //获取弹出层写下的数据，input，下拉框啊，之类的表单元素（即changefileform下的所有数据）
+                        data[item.name] = item.value;   //根据表单元素的name属性来获取数据
+                    });
+
+                    // 获取表单中的提交按钮（在我的表单里第一个button按钮就是提交按钮，使用find方法寻找即可）
+                    var submit = body.find('button')[0];
+                    // 触发点击事件，会对表单进行验证，验证成功则提交表单，失败则返回错误信息
+                    submit.click();
+
+                    if (data.name) {
+                        // 添加到数据库   刷新数据库
+                        doUpdate(data);
+                        // 刷新数据表
+                        layer.close(index);
+                    }
+                }
+            });
+        }
+
+        function goDelete(data) {
+            if (data.length < 0) {
+                alert("请选中需要删除的值");
+                return;
+            }
+            else {
+                var ids = [];
+                for (i in data) {
+                    ids.push(data[i].id);
+                }
+
+                layer.confirm('真的删除行么', function (index) {
+                    doDeleteByIds(ids);
+                    layer.close(index);
+                });
+            }
+        }
+
+        function doAdd(roleInfo) {
+            $.ajax({
+                type: 'POST',
+                url: addRole,
+                data: JSON.stringify(roleInfo),
+                dataType: 'json',
+                contentType: 'application/json; charset=utf-8',
+                success: function (data) {
+                    reload();
+                    layer.msg("添加成功");
+                },
+                error: function (data) {
+                    layer.msg(data.responseJSON.title);
+                }
+            });
+        }
+
+        function doUpdate(roleInfo) {
+            $.ajax({
+                type: 'PUT',
+                url: updateRole,
+                data: JSON.stringify(roleInfo),
+                dataType: 'json',
+                contentType: "application/json",
+                success: function (data) {
+                    reload();
+                    layer.msg("更新成功");
+                },
+                error: function (data) {
+                    layer.msg(data.responseJSON.title);
+                }
+            });
+        }
+
+        function doDelete(id) {
+            $.ajax({
+                type: 'DELETE',
+                url: deleteRole + "/" + id,
+                dataType: 'json',
+                contentType: "application/json",
+                success: function (data) {
+                    reload();
+                    layer.msg("删除成功");
+                },
+                error: function (data) {
+                    layer.msg(data.responseJSON.title);
+                }
+            });
+        }
+
+        function doDeleteByIds(ids) {
+            $.ajax({
+                type: 'DELETE',
+                url: deleteRoleByIds,
+                dataType: 'json',
+                data: JSON.stringify(ids),
+                contentType: "application/json",
+                success: function (data) {
+                    reload();
+                    layer.msg("删除成功");
+                },
+                error: function (data) {
+                    layer.msg(data.responseJSON.title);
+                }
+            });
+        }
+
+        function reload() {
+            //执行重载
+            roleTable.reload('id', {
+                page: {}
+            });
+        }
+
+        function goRoleTemplates(roleInfo){
+            $("#currentRoleId").val(roleInfo.id);
+            layer.open({
+                title: "设置角色模板",
+                type: 2,
+                content: roleTemplates,
+                area: ['30%', '50%'],
+                skin: "layui-layer-molv",
+                btn: ['确定', '关闭'],
+                success: function (layero, index) {  //成功获得加载子页面时，预先加载，将值从父窗口传到 子窗口
+                    var body = layer.getChildFrame('body');
+                    body.find('#roleId').val(roleInfo.id);
+                },
+
+                yes: function (index, layero) {   //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                    var selectData = window['layui-layer-iframe' + index].layui.tree.getChecked("id");
+                    var templateIds = [];
+
+                    $.each(selectData, function (i, val) {
+                        templateIds.push(val.id);
+
+                        if (val.children && val.children.length > 0) {
+                            $.each(val.children, function (i, cval) {
+                                templateIds.push(cval.id);
+                            })
+                        }
+                    });
+
+                    if (templateIds) {
+                        modifyRoleTemplates(templateIds, roleInfo)
+                    }
+                    // 刷新数据表
+                    layer.close(index);
+                }
+            });
+
+            function modifyRoleTemplates(templateIds, roleInfo) {
+                var roleId = roleInfo.id;
+
+                $.ajax({
+                    type: 'POST',
+                    url: modifyRoleTemplatesUrl,
+                    data: JSON.stringify({'roleId': roleId, 'menuIds': templateIds}),
+                    contentType: "application/json",
+                    success: function (data) {
+                        layer.msg("修改角色权限成功");
+                    },
+                    error: function (data) {
+                        layer.msg(data.responseJSON.title);
+                    }
+                });
+            }
+        }
+
+        function goRoleMenus(roleInfo) {
+            $("#currentRoleId").val(roleInfo.id);
+            layer.open({
+                title: "设置角色菜单",
+                type: 2,
+                content: roleMenus,
+                area: ['30%', '50%'],
+                skin: "layui-layer-molv",
+                btn: ['确定', '关闭'],
+                success: function (layero, index) {  //成功获得加载子页面时，预先加载，将值从父窗口传到 子窗口
+                    var body = layer.getChildFrame('body');
+                    body.find('#roleId').val(roleInfo.id);
+                },
+
+                yes: function (index, layero) {   //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                    var selectData = window['layui-layer-iframe' + index].layui.tree.getChecked("id");
+                    var menuIds = [];
+
+                    $.each(selectData, function (i, val) {
+                        menuIds.push(val.id);
+
+                        if (val.children && val.children.length > 0) {
+                            $.each(val.children, function (i, cval) {
+                                menuIds.push(cval.id);
+                            })
+                        }
+                    });
+
+                    if (menuIds) {
+                        modifyRoleMenus(menuIds, roleInfo)
+                    }
+                    // 刷新数据表
+                    layer.close(index);
+                }
+            });
+
+            function modifyRoleMenus(menuIds, roleInfo) {
+                var roleId = roleInfo.id;
+
+                $.ajax({
+                    type: 'POST',
+                    url: modifyRoleMenusUrl,
+                    data: JSON.stringify({'roleId': roleId, 'menuIds': menuIds}),
+                    contentType: "application/json",
+                    success: function (data) {
+                        layer.msg("修改角色权限成功");
+                    },
+                    error: function (data) {
+                        layer.msg(data.responseJSON.title);
+                    }
+                });
+            }
+        }
+
+
+        //搜索加载--数据表格重载
+        var $ = layui.$, active = {
+            reload: function () {
+                //执行重载
+                table.reload('role', {
+                    page: {
+                        curr: 1 //重新从第 1 页开始
+                    }
+                    , where: {
+                        name: $("#name").val()
+                    }
+                });
+            }
+        };
+
+
+        $('#roleSearch').on('click', function () {
+            //ids=new Array();
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+        $('#roleReset').on('click', function () {
+            $("#name").val('');
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+    });
+</script>
+
+
+<!--角色管理表单-->
+<div class="layui-row" id="roleForm" style="display:none;">
+    <div class="layui-col-md11">
+        <form class="layui-form" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">角色id</label>
+                <div class="layui-input-block">
+                    <input type="text" name="id" lay-reqtext="用户名是必填项" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">角色名</label>
+                <div class="layui-input-block">
+                    <input type="text" name="name" lay-verify="required" lay-reqtext="用户名是必填项" autocomplete="off"
+                           class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">角色描述</label>
+                <div class="layui-input-block">
+                    <input type="text" name="desc" lay-reqtext="用户名是必填项" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <a class="layui-btn" lay-submit="" lay-filter="submit">提交</a>
+                    <a class="layui-btn" lay-submit="" lay-filter="cancel">取消</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

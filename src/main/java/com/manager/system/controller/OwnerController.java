@@ -75,7 +75,7 @@ public class OwnerController {
 
    @RequestMapping(value = "/addOwner", method = RequestMethod.POST, consumes = {"multipart/form-data"})
    @ResponseBody
-   public ResponseModel<Owner> addOwner(@ModelAttribute OwnerVo owner, @RequestPart("picture") MultipartFile picture) throws URISyntaxException {
+   public ResponseModel<Owner> addOwner(@ModelAttribute OwnerVo owner, @RequestPart(value = "picture",required = false) MultipartFile picture) throws URISyntaxException {
       ResponseModel responseModel = new ResponseModel();
       //Owner owner = owner1 == null ? owner2 : owner1;
       try {

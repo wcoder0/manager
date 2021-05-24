@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <title>TreeMenus</title>
+</head>
+<body>
+<table class="layui-hide" id="menu" lay-filter="menu"></table>
+<input id="parentMenuId" style="display: none">
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<script type="text/html" id="menuToolBar">
+    <button class="layui-inline" onclick="goAdd()" lay-event="add"><i class="layui-icon layui-icon-add-1"></i></button>
+    <!--<button class="layui-inline" onclick="doEdit" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></button>-->
+</script>
+<script>
+    var webservice = "/webservice";
+    var addMenu = webservice + "/addMenu";
+    var findMenus = webservice + "/findMenus";
+    var deleteMenu = webservice + "/deleteMenu";
+    var updateMenu = webservice + "/updateMenu";
+    var menuForm = "/menuForm";
+    var menuTable;
+
+    layui.config({
+        base: '/lib/layui/extend/'
+    }).extend({
+        treeGrid: 'treeGrid'
+    }).use(['jquery', 'treeGrid', 'layer'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        treeGrid = layui.treeGrid;//很重要
+        layer = layui.layer;
+        menuTable = treeGrid.render({
+            id: 'menu'
+            , elem: '#menu'
+            , idField: 'id'
+            , url: findMenus
+            , cellMinWidth: 80
+            , treeId: 'id'//树形id字段名称
+            , treeUpId: 'pId'//树形父id字段名称
+            , treeShowName: 'name'//以树形式显示的字段
+            , toolbar: '#menuToolBar'
+            , method: 'get'
+            , cols: [
+                [
+                    {field: 'name', title: '菜单名称'}
+                    , {field: 'href', title: 'URL'}
+                    , {field: 'sort', title: '排序'}
+                    , {
+                    field: 'type', title: '菜单类型', templet: function (d) {
+                        if (d.type == 0) {
+                            return "系统菜单";
+                        } else if (d.type == 2) {
+                            return "EXCEL菜单";
+                        }
+                        else if (d.type == 1) {
+                            return "BI菜单";
+                        }
+                    }
+                }
+                    , {
+                    field: 'target', title: '打开新窗口', templet: function (d) {
+                        if (d.target == 1) {
+                            return "是";
+                        } else if (d.target == 0) {
+                            return "否";
+                        }
+                    }
+                }
+                    , {field: 'des', title: '描述'}
+
+                    //,{field:'pId', title: 'pid',hide:true,minWidth: 0}
+                    , {
+                    width: 200, title: '操作', align: 'center'
+                    , templet: function (d) {
+                        var html = '';
+                        var addBtn = '<a class="layui-btn  layui-btn-xs" lay-event="add">添加</a>';
+                        var updateBtn = '<a class="layui-btn layui-btn-xs" lay-event="update">修改</a>';
+                        var delBtn = '<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="delete">删除</a>';
+                        return addBtn + updateBtn + delBtn;
+                    }
+                }
+                ]
+            ]
+            , page: false
+        });
+
+        treeGrid.on('tool(menu)', function (obj) {
+            if (obj.event === 'update') {//删除行
+                goEdit(obj.data);
+            } else if (obj.event === "add") {//添加行
+                goAdd(obj.data);
+            } else if (obj.event === "delete") {//添加行
+                var id = obj.data.id;
+                layer.confirm('真的删除行么', function (index) {
+                    doDelete(id);
+                    layer.close(index);
+                });
+            }
+        });
+
+        function goAdd(menuInfo) {
+            $("#parentMenuId").val(menuInfo.id);
+            layer.open({
+                title: "新增菜单",
+                type: 2,
+                content: menuForm,
+                area: ['30%', '60%'],
+                skin: "layui-layer-molv",
+                btn: ['确定', '关闭'],
+                success: function (layero, index) {    //成功获得加载changefile.html时，预先加载，将值从父窗口传到 子窗口
+                    //var body = layer.getChildFrame('body');
+                    layui.form.render();
+                },
+
+                yes: function (index, layero) {         //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                    var body = layer.getChildFrame("body", index);
+                    var data = {};
+                    body.find("#menuForm").serializeArray().forEach(function (item) {    //获取弹出层写下的数据，input，下拉框啊，之类的表单元素（即changefileform下的所有数据）
+                        if (item.name == 'target') {
+                            if (item.value == 'on') {
+                                data[item.name] = 1;
+                            }
+                            else {
+                                data[item.name] = 0;
+                            }
+                        }
+                        else {
+                            data[item.name] = item.value;   //根据表单元素的name属性来获取数据
+                        }
+                    });
+
+                    if (!data.target) {
+                        data['target'] = 0;
+                    }
+
+                    // 获取表单中的提交按钮（在我的表单里第一个button按钮就是提交按钮，使用find方法寻找即可）
+                    var submit = body.find('button')[0];
+                    // 触发点击事件，会对表单进行验证，验证成功则提交表单，失败则返回错误信息
+                    submit.click();
+
+                    if (data.name && data.sort) {
+                        doAdd(data);
+                        layer.close(index);
+                    }
+                }
+            });
+        }
+
+        function goEdit(menuInfo) {
+            if (menuInfo.pId) {
+                $("#parentMenuId").val(menuInfo.pId);
+            }
+            else {
+                $("#parentMenuId").val('');
+            }
+
+            layer.open({
+                title: "修改菜单",
+                type: 2,
+                content: menuForm,
+                area: ['30%', '60%'],
+                skin: "layui-layer-molv",
+                btn: ['确定', '关闭'],
+                success: function (layero, index) {    //成功获得加载changefile.html时，预先加载，将值从父窗口传到 子窗口
+                    var body = layer.getChildFrame('body');
+                    for (var key in menuInfo) {
+                        body.find('#' + key).val(menuInfo[key]);
+                    }
+
+                    if (menuInfo.target == 1) {
+                        body.find('#target').prop("checked", true);
+                    }
+                    else {
+                        body.find('#target').prop("checked", false);
+                    }
+
+                    layui.form.render();
+                },
+
+                yes: function (index, layero) {         //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                    var body = layer.getChildFrame("body", index);
+                    var data = {};
+                    body.find("#menuForm").serializeArray().forEach(function (item) {  //获取弹出层写下的数据，input，下拉框啊，之类的表单元素（即changefileform下的所有数据）
+                        if (item.name == 'target') {
+                            if (item.value == 'on') {
+                                data[item.name] = 1;
+                            }
+                            else {
+                                data[item.name] = 0;
+                            }
+                        }
+                        else {
+                            data[item.name] = item.value;   //根据表单元素的name属性来获取数据
+                        }
+                    });
+
+                    if (!data.target) {
+                        data['target'] = 0;
+                    }
+
+                    // 获取表单中的提交按钮（在我的表单里第一个button按钮就是提交按钮，使用find方法寻找即可）
+                    var submit = body.find('button')[0];
+                    // 触发点击事件，会对表单进行验证，验证成功则提交表单，失败则返回错误信息
+                    submit.click();
+
+                    if (data.name && data.sort) {
+                        doEdit(data);
+                        layer.close(index);
+                    }
+                }
+            });
+        }
+
+
+        function goDelete(data) {
+            if (data.length < 0) {
+                alert("请选中需要删除的值");
+                return;
+            }
+            else {
+                var ids = [];
+                for (i in data) {
+                    ids.push(data[i].id);
+                }
+
+                layer.confirm('真的删除行么', function (index) {
+                    doDeleteByIds(ids);
+                    layer.close(index);
+                });
+            }
+        }
+
+        function doEdit(menuInfo) {
+            $.ajax({
+                type: 'PUT',
+                url: updateMenu,
+                data: JSON.stringify(menuInfo),
+                dataType: 'json',
+                contentType: "application/json",
+                success: function (data) {
+                    layer.msg("修改成功");
+                    reload();
+                },
+                error: function (data) {
+                    layer.msg(data.responseJSON.title);
+                }
+            });
+        }
+
+        function doDelete(id) {
+            $.ajax({
+                type: 'DELETE',
+                url: deleteMenu + "/" + id,
+                dataType: 'json',
+                contentType: "application/json",
+                success: function (data) {
+                    layer.msg("删除成功");
+                    reload();
+                },
+                error: function (data) {
+                    layer.msg(data.responseJSON.title);
+                }
+            });
+        }
+
+        function reload() {
+            /*menuTable.reload('id', {
+                page: {
+                    curr: 1 //重新从第 1 页开始
+                }
+            });*/
+            window.location.reload();
+        }
+
+    });
+
+    function goAdd() {
+        $("#parentMenuId").val('');
+        layer.open({
+            title: "新增菜单",
+            type: 2,
+            content: menuForm,
+            area: ['30%', '60%'],
+            skin: "layui-layer-molv",
+            btn: ['确定', '关闭'],
+            success: function (layero, index) {    //成功获得加载changefile.html时，预先加载，将值从父窗口传到 子窗口
+                layui.form.render();
+            },
+
+            yes: function (index, layero) {         //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                var body = layer.getChildFrame("body", index);
+                var data = {};
+                body.find("#menuForm").serializeArray().forEach(function (item) {
+                    if (item.name == 'target') {
+                        if (item.value == 'on') {
+                            data[item.name] = 1;
+                        }
+                        else {
+                            data[item.name] = 0;
+                        }
+                    }
+                    else {
+                        data[item.name] = item.value;   //根据表单元素的name属性来获取数据
+                    }
+                });
+
+                if (!data.target) {
+                    data['target'] = 0;
+                }
+
+                // 获取表单中的提交按钮（在我的表单里第一个button按钮就是提交按钮，使用find方法寻找即可）
+                var submit = body.find('button')[0];
+                // 触发点击事件，会对表单进行验证，验证成功则提交表单，失败则返回错误信息
+                submit.click();
+
+                if (data.name && data.sort) {
+                    doAdd(data);
+                    layer.close(index);
+                }
+            }
+        });
+    }
+
+
+    function reload() {
+        /* menuTable.reload('id', {
+             page: {
+                 curr: 1 //重新从第 1 页开始
+             }
+         });*/
+        window.location.reload();
+    }
+
+    function doAdd(menuInfo) {
+        $.ajax({
+            type: 'POST',
+            url: addMenu,
+            data: JSON.stringify(menuInfo),
+            dataType: 'json',
+            contentType: "application/json",
+            success: function (data) {
+                reload();
+                layer.msg("添加菜单成功");
+            },
+            error: function (data) {
+                layer.msg(data.responseJSON.title);
+            }
+        });
+    }
+</script>
+</body>
+</html>

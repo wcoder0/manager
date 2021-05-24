@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>福田金融首页</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <link rel="stylesheet" href="lib/layui/css/layui.css" media="all">
+    <script src="/lib/jquery/jquery.min.js"></script>
+    <script src="lib/layui/layui.js" charset="utf-8"></script>
+    <style type="text/css">
+        iframe {
+            height: 99%;
+        }
+
+        .layui-icon-close {
+            position: absolute;
+            right: 0px;
+            top: 10%;
+            width: 16px;
+            height: 16px;
+            margin-left: -15px;
+            margin-top: -5px;
+        }
+    </style>
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+    <div class="layui-header">
+        <div class="layui-logo"><img src="/img/login/logo.png"></div>
+        <!-- 头部区域（可配合layui已有的水平导航） -->
+        <ul class="layui-nav layui-layout-left">
+            <span class="layui-nav-bar" style="left: 19.9764px; top: 55px; width: 0px; opacity: 0;"></span>
+        </ul>
+        <ul class="layui-nav layui-layout-right">
+            <li class="layui-nav-item">
+                <a id="loginUser" href="javascript:;">
+                    <img src="//tva1.sinaimg.cn/crop.0.0.118.118.180/5db11ff4gw1e77d3nqrv8j203b03cweg.jpg"
+                         class="layui-nav-img">
+                    admin
+                </a>
+                <dl class="layui-nav-child">
+                    <dd><a href="">退了</a></dd>
+                </dl>
+            </li>
+        </ul>
+    </div>
+
+    <div class="layui-side layui-bg-black">
+        <div class="layui-side-scroll">
+            <!-- 左侧导航区域（可配合layui已有的垂直导航） -->
+            <ul id="menu" class="layui-nav layui-nav-tree" lay-filter="menu">
+            </ul>
+        </div>
+    </div>
+
+    <div class="layui-body" style="bottom: 0px !important;">
+    </div>
+
+</div>
+<script>
+    var _hmt = _hmt || [];
+    (function () {
+        var hm = document.createElement("script");
+        hm.src = "https://hm.baidu.com/hm.js?d214947968792b839fd669a4decaaffc";
+        var s = document.getElementsByTagName("script")[0];
+        s.parentNode.insertBefore(hm, s);
+    })();
+</script>
+<script>
+</script>
+<script>
+    $(document).ready(function () {
+        //$('.menuItem').on('click', openiframe);
+        var webservice = "/webservice"
+        var findLoginUserPermission = webservice + "/findLoginUserPermission";
+        var getBIUrl = webservice + "/getBIUrl";
+        var getLoginUserUrl =  webservice + "/getLoginUser";
+        initMenus(findLoginUserPermission);
+        getLoginUser(getLoginUserUrl);
+
+        function getLoginUser(getLoginUserUrl) {
+            $.ajax({
+                url: getLoginUserUrl,
+                method: 'GET',
+                dataType: 'json',
+                contentType: "application/json",
+                success: function (data) {
+                    if (data) {
+                        ("#loginUser").text(data.username);
+                    }
+                },
+                error: function (data) {
+                    layui.use('layer', function () {
+                        layer.msg("获取当前登录用户失败");
+                    });
+                }
+            })
+        }
+
+        function initMenus(findLoginUserPermission) {
+            $.ajax({
+                url: findLoginUserPermission,
+                method: 'GET',
+                dataType: 'json',
+                contentType: "application/json",
+                success: function (data) {
+                    if (data) {
+                        $.each(data, function (index, item) {
+                            var $menuUl = $("ul.layui-nav-tree");
+                            var type = item.type;
+                            var href = item.href;
+                            var target = item.target;
+                            if (type == 2) {
+                                href = href + "?id=" + item.templateId;
+                            }
+
+                            if (!item.parentId) {
+                                var li = '<li class="layui-nav-item" ></li>';
+                                var parent = "<a class='menuItem' data-target=" + target + " data-type=" + type + " data-id=" + item.menuId + " data-href=" + href + ">" + item.menuName + "<span class='layui-nav-more'></span></a>";
+                                var $li = $(li);
+                                var $parent = $(parent);
+                                $li.append($parent);
+                                $menuUl.append($li);
+                            }
+                            else {
+                                var dl = '<dl class="layui-nav-child">';
+                                var $dl = $(dl);
+                                var $li = $menuUl.children("li.layui-nav-item:last-child");
+                                var dd = '<dd><a class="menuItem" data-target=' + target + '  data-type=' + type + ' data-id=' + item.menuId + ' data-href=' + href + '>' + item.menuName + '</a></dd>';
+                                var $dd = $(dd);
+
+                                if ($li.children("dl").length != 0) {
+                                    $li.children("dl").append($dd);
+                                }
+                                else {
+                                    $dl = $(dl);
+                                    $dl.append($dd);
+                                    $li.append($dl);
+                                }
+                            }
+                        });
+
+                        $('.menuItem').on('click', openiframe);
+                        openDefaultMenu();
+                    }
+                },
+                error: function (data) {
+                    layui.use('layer', function () {
+                        layer.msg("查询权限菜单失败");
+                    });
+                }
+            })
+        }
+
+        function openiframe() {
+            // 获取标识数据
+            var dataUrl = $(this).data('href'),
+                menuName = $.trim($(this).text()),
+                target = $(this).data('target'),
+                flag = true,
+                type = $(this).data('type');
+            var id = $(this).data('id');
+
+            if (dataUrl == undefined || $.trim(dataUrl).length == 0) return false;
+
+            if (type == 1) {  //BI菜单 获取token参数
+                $.ajax({
+                    type: 'GET',
+                    url: getBIUrl + "/" + id,
+                    data: {},
+                    dataType: 'json',
+                    contentType: "application/json",
+                    success: function (data) {
+                        if (data) {
+                            dataUrl = data;
+                            menuItem(dataUrl, menuName, target, flag, id, type);
+                        }
+                        else {
+                            layer.msg("获取BI系统Url失败");
+                        }
+                    },
+                    error: function (data) {
+                        layui.use('layer', function () {
+                            layer.msg(data.responseJSON.title);
+                        });
+                    }
+                });
+            }
+
+            menuItem(dataUrl, menuName, target, flag, id);
+        }
+
+        function menuItem(dataUrl, menuName, target, flag, id) {
+            //选项卡菜单已存在
+            $('.layui-header .layui-layout-left .menuTab').each(function () {
+                var dataId = $(this).data('id');
+                if (id == dataId) {
+                    $(this).addClass('layui-this');
+                    $(this).siblings().removeClass('layui-this');
+                    $('iframe.body-iframe').each(function () {
+                        if ($(this).data('id') == dataId) {
+                            $(this).show().siblings('.body-iframe').hide();
+                            return false;
+                        }
+                    });
+
+                    flag = false;
+                    return false;
+                }
+            });
+
+
+            // 选项卡菜单不存在
+            if (flag) {
+                if (target == 1) {
+                    window.open(dataUrl, '_blank'); //打开新页面
+                    return;
+                } else {
+                    $('.menuTab').removeClass('layui-this');
+                    if ($('.layui-header .layui-layout-left .menuTab').length >= 5) {
+                        $($('.layui-header .layui-layout-left .menuTab')[0]).find(".layui-icon-close").click();
+                    }
+                    var str = '<li class="layui-nav-item menuTab layui-this" data-id="' + id + '" data-url="' + dataUrl + '"><a>' + menuName + '</a><i class="layui-icon layui-icon-close"</li>';//<i class="fa fa-times-circle"></i>
+                    // 添加选项卡对应的iframe
+                    var iframeElement = '<iframe class="body-iframe" frameborder="0" width="100%" height="100%" data-id="' + id + '"  name="+iframe' + id + '" src="' + dataUrl + '"  data-url="' + dataUrl + '"></iframe>';
+                    $('.layui-body').find('iframe.body-iframe').hide();
+                    $('.layui-body').append(iframeElement);
+                    $('.layui-header .layui-layout-left li').siblings().removeClass('layui-this');
+                    $('.layui-header .layui-layout-left').append(str);
+                    $('.layui-header .layui-layout-left .menuTab').on('click', activeTab);
+                    $(".layui-icon-close").on('click', closeTab);
+                }
+            }
+            return false;
+        }
+
+        function closeTab() {
+            var tabNum = $('.layui-header .layui-layout-left .menuTab').length;
+            if (tabNum == 1) {
+                layui.use('layer', function () {
+                    layer.msg("剩余一个菜单不能删除");
+                });
+
+                return false;
+            }
+
+            var currentId = $(this).parent().data("id");
+
+            $('iframe.body-iframe').each(function () {
+                if ($(this).data('id') == currentId) {
+                    $(this).remove();
+                    return false;
+                }
+            });
+
+            for (var j = 0; j < $('li.menuTab').length; j++) {
+                if ($($('li.menuTab')[j]).attr('data-id') == currentId) {
+                    if (j == $('li.menuTab').length - 1) {
+                        $($('li.menuTab')[j - 1]).click();
+                        $($('li.menuTab')[j - 1]).addClass('layui-this');
+                        break;
+                    }
+                    else {
+                        $($('li.menuTab')[j + 1]).click();
+                        $($('li.menuTab')[j + 1]).addClass('layui-this');
+                        break;
+                    }
+                }
+            }
+
+            $(this).parent().remove();
+        }
+
+        $('.layui-header .layui-layout-left .menuTab').on('click', activeTab);
+
+
+        function activeTab() {
+            var currentId = $(this).data("id");
+            $(this).siblings().removeClass('layui-this');
+            $(this).addClass('layui-this');
+            $('iframe.body-iframe').each(function () {
+                if ($(this).data('id') == currentId) {
+                    $(this).show().siblings('.body-iframe').hide();
+                    return false;
+                }
+            });
+        }
+
+        function openDefaultMenu() {
+            //JavaScript代码区域
+            layui.use('element', function () {
+                var element = layui.element;
+                element.render('nav', "menu");
+            });
+
+            if ($("li.menuTab").length > 0) {  //导航
+                $($("li.menuTab")[0]).addClass('layui-this');
+            }
+
+            if ($(".layui-nav-tree li.layui-nav-item").length > 0) {  //菜单展开
+                $($(".layui-nav-tree li.layui-nav-item")[0]).addClass(' layui-nav-itemed');
+            }
+
+            $("ul.layui-nav-tree").find("a").each(function () {  //菜单点击
+                if ($(this).data('href')) {
+                    $(this).click();
+                    return false;
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

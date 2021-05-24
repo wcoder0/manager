@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="/lib/layui/css/layui.css" media="all"/>
+    <title>ExcelTemplate</title>
+</head>
+<body>
+
+<div class="layui-form" lay-filter="excelTemplate">
+    <div class="layui-row">
+        <div class="layui-col-md4">
+            <div class="layui-form-item">
+                <label class="layui-form-label">选择数据表</label>
+                <div class="layui-input-inline">
+                    <select id="tableName" name="tableName" lay-verify="required">
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-md3">
+            <div class="layui-form-item">
+                <label class="layui-form-label">模板名称</label>
+                <div class="layui-input-block">
+                    <input type="text" id="templateName" name="templateName" placeholder="请输入模板名" autocomplete="off"
+                           class="layui-input">
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-md3">
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button type="button" class="layui-btn" id="upload">
+                        选择模板
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-md2">
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" id="commit" onclick="return false">上传</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<table class="layui-hide" id="excelTemplate" lay-filter="excelTemplate"></table>
+<script src="/lib/jquery/jquery.min.js"></script>
+<script src="/lib/layui/layui.js" charset="utf-8"></script>
+
+<script type="text/html" id="operation">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="delete">删除</a>
+</script>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        var findTables = "/findTables";
+        var uploadExcel = "/uploadExcel";
+        var templateTable;
+        $("#tableName").empty();
+
+        layui.use(['form', 'layer', 'upload'], function () {
+            var layer = layui.layer;
+            var upload = layui.upload;
+            var form = layui.form;
+            var $ = layui.jquery;
+
+            $.ajax({
+                url: findTables,
+                method: 'GET',
+                dataType: 'json',
+                contentType: "application/json",
+                success: function (data) {
+                    if (data) {
+                        $.each(data, function (index, item) {
+                            $('#tableName').append("<option value=" + item + ">" + item + "</option>");
+                        });
+                        form.render('select', 'excelTemplate');
+                    }
+                },
+                error: function (data) {
+                    layer.msg(data.responseJSON.title);
+                }
+            })
+
+            upload.render({
+                elem: '#upload',
+                url: uploadExcel,
+                auto: false,//选择文件后不自动上传
+                bindAction: '#commit',
+                accept: 'file' //普通文件
+                , exts: 'xls|excel|xlsx'
+                , before: function () {
+                    this.data = {
+                        tableName: $('#tableName').val(),
+                        templateName: $("#templateName").val()
+                    }
+                },
+                //选择文件后的回调
+                choose: function (obj) {
+                    // obj.preview(function (index, file, result) {
+                    //     $('#preview').attr('src', result);
+                    // })
+                },
+                //操作成功的回调
+                done: function (res, index, upload) {
+                    /*var code = res.code === 0 ? 1 : 2;
+                    layer.alert(res.msg, {icon: code}, function () {
+                        parent.window.location.reload();
+                    })*/
+                    layer.msg("上传模板成功");
+                    reload();
+                },
+                //上传错误回调
+                error: function (index, upload) {
+                    reload();
+                }
+            });
+        })
+
+
+        layui.use(['table', 'form', 'laypage'], function () {
+            var table = layui.table;
+            var form = layui.form;
+            var laypage = layui.laypage;
+            var findTemplates = "/findTemplates";
+            var uploadForm = "/uploadForm";
+            var addTemplate = "/addTemplate";
+            var updateTemplate = "/updateTemplate";
+            var deleteTemplate = "/deleteTemplate";
+            var deleteTemplates = "/deleteTemplates";
+
+            templateTable = table.render({
+                elem: '#excelTemplate'
+                , toolbar: 'default' //开启工具栏，此处显示默认图标，可以自定义模板，详见文档
+                , defaultToolbar: []
+                , page: true
+                , request: {
+                    pageName: 'current' //页码的参数名称，默认：page
+                    , limitName: 'size' //每页数据量的参数名，默认：limit
+                }
+                , url: findTemplates
+                , cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+                , cols: [
+                    [
+                        {type: 'checkbox', fixed: 'left'}
+                        , {field: 'id', title: 'ID', hide: true}
+                        , {field: 'excelName', title: 'excel文件名'}
+                        , {field: 'menuName', title: '模板名'}
+                        , {field: 'tableName', title: '表名'}
+                        , {fixed: 'right', title: '操作', toolbar: '#operation', minWidth: 150}
+                    ]
+                ]
+                , parseData: function (res) { //res 即为原始返回的数据
+                    return {
+                        "code": "0", //解析接口状态
+                        //"msg": res.msg, //解析提示文本
+                        "count": res.total, //解析数据长度
+                        "data": res.records //解析数据列表
+                    }
+                }
+                , done: function (res, curr, count) {
+
+                }
+            });
+
+
+            //头工具栏事件
+            table.on('toolbar(excelTemplate)', function (obj) {
+                var checkStatus = table.checkStatus(obj.config.id)
+                    , data = checkStatus.data; //获取选中的数据
+                var limit = obj.config.page.limit;
+                var page = obj.config.page.page;
+                switch (obj.event) {
+                    case 'add':
+                        goAdd(limit, page);
+                        break;
+                    case 'update':
+                        if (data && data.length > 1) {
+                            layer.alert('请选择一个要修改的值');
+                            return;
+                        }
+
+                        if (data && data.length < 1) {
+                            layer.alert('请选择一个要修改的值');
+                            return;
+                        }
+                        goEdit(data[0]);
+                        break;
+                    case 'delete':
+                        goDelete(data);
+                        break;
+                }
+                ;
+            });
+
+            //监听行工具事件
+            table.on('tool(excelTemplate)', function (obj) {
+                var data = obj.data;
+                if (obj.event === 'delete') {
+                    layer.confirm('真的删除行么', function (index) {
+                        doDelete(data.id);
+                        obj.del();
+                        layer.close(index);
+                    });
+                } else if (obj.event === 'edit') {
+                    goEdit(data);
+                }
+            });
+
+
+            function goAdd(limit, page) {
+                layer.open({
+                    title: "新增模板",
+                    type: 2,
+                    content: uploadForm,
+                    area: ['30%', '50%'],
+                    skin: "layui-layer-molv",
+                    btn: ['确定', '关闭'],
+                    success: function (layero, index) {  //成功获得加载子页面时，预先加载，将值从父窗口传到 子窗口
+                        layui.form.render();
+                    },
+
+                    yes: function (index, layero) {   //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                        var body = layer.getChildFrame("body", index);
+                        var data = {};
+                        body.find("#userForm").serializeArray().forEach(function (item) {    //获取弹出层写下的数据，input，下拉框啊，之类的表单元素（即changefileform下的所有数据）
+                            data[item.name] = item.value;   //根据表单元素的name属性来获取数据
+                        });
+                        // 添加到数据库   刷新数据库
+                        doAdd(data, limit, page);
+                        // 刷新数据表
+                        layer.close(index);
+                    }
+                });
+            }
+
+            function goEdit(data) {
+                layer.open({
+                    title: "编辑用户",
+                    type: 2,
+                    content: uploadForm,
+                    area: ['30%', '50%'],
+                    skin: "layui-layer-molv",
+                    btn: ['确定', '关闭'],
+                    success: function (layero, index) {  //成功获得加载子页面时，预先加载，将值从父窗口传到 子窗口
+                        var body = layer.getChildFrame('body');
+                        for (var key in data) {
+                            body.find('#' + key).val(data[key]);
+                        }
+                    },
+
+                    yes: function (index, layero) {   //按了弹出层的确定按钮时，这是将在父窗口中获取子窗口form标签里的所有值，并根据name名和值形成键值对json对象
+                        var body = layer.getChildFrame("body", index);
+                        var data = {};
+                        body.find("#userForm").serializeArray().forEach(function (item) {    //获取弹出层写下的数据，input，下拉框啊，之类的表单元素（即changefileform下的所有数据）
+                            data[item.name] = item.value;   //根据表单元素的name属性来获取数据
+                        });
+                        // 添加到数据库   刷新数据库
+                        doUpdate(data);
+                        // 刷新数据表
+                        layer.close(index);
+                        //resetSearch();
+                    }
+                });
+            }
+
+            function goDelete(data) {
+                if (data.length < 0) {
+                    alert("请选中需要删除的值");
+                    return;
+                }
+                else {
+                    var ids = [];
+                    for (i in data) {
+                        ids.push(data[i].id);
+                    }
+
+                    layer.confirm('真的删除行么', function (index) {
+                        doDeleteByIds(ids);
+                        layer.close(index);
+                    });
+                }
+            }
+
+            function doAdd(userInfo, limit, page) {
+                $.ajax({
+                    type: 'POST',
+                    url: addTemplate,
+                    data: JSON.stringify(userInfo),
+                    dataType: 'json',
+                    contentType: 'application/json; charset=utf-8',
+                    success: function (data) {
+                        layer.msg("上传模板成功");
+                        reload(limit, page);
+                    },
+                    error: function (data) {
+                        layer.msg(data.responseJSON.title);
+                    }
+                });
+            }
+
+            function doUpdate(userInfo) {
+                $.ajax({
+                    type: 'PUT',
+                    url: updateTemplate,
+                    data: JSON.stringify(userInfo),
+                    dataType: 'json',
+                    contentType: "application/json",
+                    success: function (data) {
+                        layer.msg("修改模板成功");
+                        reload();
+                    },
+                    error: function (data) {
+                        layer.msg(data.responseJSON.title);
+                    }
+                });
+            }
+
+            function doDelete(id) {
+                $.ajax({
+                    type: 'DELETE',
+                    url: deleteTemplate + "/" + id,
+                    dataType: 'json',
+                    contentType: "application/json",
+                    success: function (data) {
+                        layer.msg("删除模板成功");
+                        reload();
+                    },
+                    error: function (data) {
+                        layer.msg(data.responseJSON.title);
+                    }
+                });
+            }
+
+
+            function doDeleteByIds(ids) {
+                $.ajax({
+                    type: 'DELETE',
+                    url: deleteTemplates,
+                    data: JSON.stringify(ids),
+                    dataType: 'json',
+                    contentType: "application/json",
+                    success: function (data) {
+                        layer.msg("删除模板成功");
+                        reload();
+                    },
+                    error: function (data) {
+                        layer.msg(data.responseJSON.title);
+                    }
+                });
+            }
+
+        });
+
+        function reload(limit, page) {
+            //执行重载
+            templateTable.reload('id', {
+                page: {
+                    current: page,
+                    size: limit
+                }
+            });
+        }
+    });
+
+
+</script>
+</body>
+</html>
